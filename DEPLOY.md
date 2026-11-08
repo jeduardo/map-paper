@@ -1,78 +1,54 @@
 # Deploying map-paper
 
-The site is a static build plus one serverless function, hosted on Cloudflare Pages. Telemetry is written to
-Firestore by that function, never by the browser.
+The app is hosted on Cloudflare Pages. GitHub Actions builds and deploys it to the
+`map-paper` Pages project when `main` changes. Cloudflare configuration, including
+the custom domain and sign-in rules, is managed in the `personal-infra` repo.
 
-Everything below needs your accounts, so it has to be run by you. None of it takes long.
+## Cloudflare setup
 
-## 1. Cloudflare Pages
+In the `personal-infra` repo, `terraform/19-map-paper.tf` creates the
+`map-paper` Pages project, `maps.mikos.org` DNS record, and custom domain. It
+also protects these addresses with Cloudflare Access:
 
-1. Sign in at [dash.cloudflare.com](https://dash.cloudflare.com) and go to **Workers & Pages → Create → Pages
-   → Connect to Git**.
-2. Pick `deepakvettickal/map-paper` and set:
-   - **Build command:** `npm run build`
-   - **Output directory:** `dist`
-   - **Node version:** 20 (add an environment variable `NODE_VERSION = 20`)
-3. Deploy. You get `map-paper.pages.dev`, and every push to `main` redeploys. Pull requests get their own
-   preview URLs.
+- `maps.mikos.org`
+- `map-paper-488.pages.dev`
+- `*.map-paper-488.pages.dev`, including branch preview URLs
 
-Functions in `functions/` are picked up automatically, so `/api/event` goes live with the site.
+Access uses the same one-time PIN login and allowed email list as the London
+Place Finder. Apply the Terraform configuration from `personal-infra` to set up
+these resources.
 
-### A cleaner URL
+## GitHub Actions setup
 
-`map-paper.pages.dev` works, but a domain reads better on a poster tool. Buy one (Cloudflare Registrar sells
-at cost), then in the Pages project go to **Custom domains → Set up a domain**. If the domain is already on
-Cloudflare DNS, the certificate is issued in a minute or two.
+Add these repository secrets to `jeduardo/map-paper`:
 
-Names worth checking: `mappaper.art`, `mappaper.studio`, `map-paper.app`, `paper.maps` (unavailable),
-`inkandatlas.com`. A `.art` or `.studio` suits the project and both are cheap.
-
-## 2. Firebase for telemetry
-
-1. Create a project at [console.firebase.google.com](https://console.firebase.google.com) (analytics not
-   needed).
-2. **Build → Firestore Database → Create database**, in production mode, in a region near your users.
-3. Publish the rules from [`firestore.rules`](firestore.rules). They deny every client read and write. The
-   Pages Function authenticates as a service account, which bypasses rules, so the collection stays
-   unreachable from any browser.
-4. **Project settings → Service accounts → Generate new private key**. Keep the JSON file out of the repo.
-
-## 3. Wire the two together
-
-In the Pages project, under **Settings → Environment variables**, add three **encrypted** variables for both
-Production and Preview:
-
-| Variable | Value from the service account JSON |
+| Secret | Value |
 |---|---|
-| `FIREBASE_PROJECT_ID` | `project_id` |
-| `FIREBASE_CLIENT_EMAIL` | `client_email` |
-| `FIREBASE_PRIVATE_KEY` | `private_key`, newlines and all |
+| `CLOUDFLARE_API_TOKEN` | Cloudflare API token with Pages edit access |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID |
 
-Set `TELEMETRY_DISABLED = true` on Preview if you would rather previews did not write.
+The existing workflow runs `npm ci`, `npm run build`, and deploys `dist` with
+Wrangler. It deploys the `main` branch to production. It does not automatically
+create pull request previews. To deploy a preview manually, build the app and
+run:
 
-Redeploy, open the site, and a `visit` document should appear in the `events` collection.
+```sh
+npx --yes wrangler@4 pages deploy dist --project-name=map-paper \
+  --branch=<branch-name>
+```
 
-## What gets recorded
+The wildcard Access application protects the resulting
+`*.map-paper-488.pages.dev` URL.
 
-Anonymous counts only. No cookies, no fingerprinting, no third-party scripts, and the session id lives in
-`sessionStorage`, so it disappears when the tab closes.
+## Telemetry
 
-| Event | Recorded with it |
-|---|---|
-| `visit` | style, interface theme, referring site, viewport size, country (from Cloudflare) |
-| `export` | style, place, output size and DPI, render time, file size, **and the full poster config** |
-| `randomise` | style, city, how far the palette drifted |
-| `preset_export`, `preset_import` | style |
+Telemetry is disabled in `wrangler.toml` with `TELEMETRY_DISABLED = "true"`.
+The `/api/event` function returns without writing events to Firestore. No
+Firebase secrets are needed for this deployment.
 
-The poster config saved with each download is the same JSON the app can import, which is what the planned
-gallery will replay.
+## Local Pages preview
 
-## Running the function locally
-
-```bash
+```sh
 npm run build
 npx wrangler pages dev dist --compatibility-date=2024-11-01
 ```
-
-Without the Firebase variables the endpoint answers normally and simply logs that the write failed, so the
-app behaves the same either way.

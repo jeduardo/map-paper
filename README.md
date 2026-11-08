@@ -1,6 +1,7 @@
 # map-paper
 
-**Try it live: [maps.mikos.org](https://maps.mikos.org)**
+> **Warning:** This fork is for customization and experimentation. See the
+> [original map-paper project](https://github.com/deepakvettickal/map-paper).
 
 Make a poster or a wallpaper out of any place on Earth. There are 41 styles to pick from. Some copy old
 cartography, some borrow from map apps, and the rest are made up. Everything renders live in the browser and

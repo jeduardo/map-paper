@@ -5,6 +5,13 @@ export const SIZES: SizePreset[] = [
   { id: "a3", label: "A3 portrait", width: 297, height: 420, unit: "mm" },
   { id: "square", label: "Square 30 cm", width: 300, height: 300, unit: "mm" },
   { id: "phone", label: "Phone wallpaper", width: 1290, height: 2796, unit: "px" },
+  {
+    id: "macbook-pro-14-retina",
+    label: "Retina MacBook Pro 14″",
+    width: 3024,
+    height: 1964,
+    unit: "px",
+  },
   { id: "desktop-720p", label: "Desktop 720p", width: 1280, height: 720, unit: "px" },
   { id: "desktop-1080p", label: "Desktop 1080p", width: 1920, height: 1080, unit: "px" },
   { id: "desktop-2k", label: "Desktop 2K", width: 2560, height: 1440, unit: "px" },

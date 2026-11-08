@@ -1,22 +1,18 @@
 # Deploying map-paper
 
 The app is hosted on Cloudflare Pages. GitHub Actions builds and deploys it to the
-`map-paper` Pages project when `main` changes. Cloudflare configuration, including
-the custom domain and sign-in rules, is managed in the `personal-infra` repo.
+`map-paper` Pages project when `main` changes. The custom domain and sign-in rules
+are configured in Cloudflare.
 
 ## Cloudflare setup
 
-In the `personal-infra` repo, `terraform/19-map-paper.tf` creates the
-`map-paper` Pages project, `maps.mikos.org` DNS record, and custom domain. It
-also protects these addresses with Cloudflare Access:
+The `map-paper` Pages project has a custom domain and Cloudflare Access rules.
+Access protects the custom domain and these Pages hostnames:
 
-- `maps.mikos.org`
 - `map-paper-488.pages.dev`
 - `*.map-paper-488.pages.dev`, including branch preview URLs
 
-Access uses the same one-time PIN login and allowed email list as the London
-Place Finder. Apply the Terraform configuration from `personal-infra` to set up
-these resources.
+Access uses one-time PIN login and an allowed email list.
 
 ## GitHub Actions setup
 
